@@ -9,15 +9,17 @@ func TestInterpreter(t *testing.T) {
 		expr string
 		want int
 	}{
+		// Declarations
+		{"assignment", "$a=1", 1},
+		// Expressions
 		{"Single integer", "1", 1},
 		{"Negation", "-1", -1},
 		{"Addition", "1+2", 3},
 		{"Addition chain", "1+2+3", 6},
-		{"Precedence 1", "1+2*3", 7},
-		{"Precedence 2", "1*2+3", 5},
+		{"Precedence weakest first", "1+2*3", 7},
+		{"Precedence weakest last", "1*2+3", 5},
 		{"Paranthesises", "(1+2)*3", 9},
-		{"sequence", "1;2", 2},
-		{"assignment", "a:1", 1},
+		{"function single arg", "\\x.x*x"}
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			i := NewInterpreter()

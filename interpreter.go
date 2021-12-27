@@ -33,6 +33,14 @@ func (i *Interpreter) Eval(s string) (interface{}, error) {
 
 func (i *Interpreter) interpret(node Node) (interface{}, error) {
 	switch {
+	case node.Type == '$':
+		ident := rune(node.Args[0].Type)
+		val, err := i.interpret(node.Args[1])
+		if err != nil {
+			return nil, err
+		}
+		i.env[ident] = val
+		return val, nil
 	case node.Type.IsDigit():
 		return int(node.Type - '0'), nil
 	case node.Type.IsIdent():
@@ -40,24 +48,6 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 		if !ok {
 			return nil, fmt.Errorf("undefined variable %c", node.Type)
 		}
-		return val, nil
-	case node.Type == ';':
-		_, err := i.interpret(node.Args[0])
-		if err != nil {
-			return nil, err
-		}
-		right, err := i.interpret(node.Args[1])
-		if err != nil {
-			return nil, err
-		}
-		return right, nil
-	case node.Type == ':':
-		ident := rune(node.Args[0].Type)
-		val, err := i.interpret(node.Args[1])
-		if err != nil {
-			return nil, err
-		}
-		i.env[ident] = val
 		return val, nil
 	case node.Type == '+':
 		left, err := i.interpret(node.Args[0])

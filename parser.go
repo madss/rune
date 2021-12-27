@@ -25,12 +25,8 @@ func (n *Node) String() string {
 func precedence(t token) int {
 	switch t {
 	case '*', '/':
-		return 4
-	case '+', '-':
-		return 3
-	case ':':
 		return 2
-	case ';':
+	case '+', '-':
 		return 1
 	default:
 		return 0
@@ -38,7 +34,7 @@ func precedence(t token) int {
 }
 
 func parse(ts *tokens) (Node, error) {
-	node, err := parseExpr(ts, 0)
+	node, err := parseDecl(ts)
 	if err != nil {
 		return Node{}, err
 	}
@@ -46,6 +42,30 @@ func parse(ts *tokens) (Node, error) {
 		return Node{}, fmt.Errorf("expected end of data, got %s", t)
 	}
 	return node, nil
+}
+
+func parseDecl(ts *tokens) (Node, error) {
+	t := ts.Current()
+	switch t {
+	case '$':
+		ts.Advance()
+		ident := ts.Current()
+		if !ident.IsIdent() {
+			return Node{}, fmt.Errorf("expected identifier, got %s", t)
+		}
+		ts.Advance()
+		if ts.Current() != '=' {
+			return Node{}, fmt.Errorf("expected =, got %s", t)
+		}
+		ts.Advance()
+		n, err := parseExpr(ts, 0) // FIXME: Is this a good precedence?!
+		if err != nil {
+			return Node{}, fmt.Errorf("expected expression, got %s", ts.Current())
+		}
+		return Node{t, []Node{{Type: ident}, n}}, nil
+	default:
+		return parseExpr(ts, 0)
+	}
 }
 
 func parseExpr(ts *tokens, prec int) (Node, error) {
@@ -91,17 +111,7 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 
 		}
 		switch t {
-		case ':':
-			if !node.Type.IsIdent() {
-				return Node{}, fmt.Errorf("expected identifier, got %s", t)
-			}
-			ts.Advance()
-			other, err := parseExpr(ts, precedence(t))
-			if err != nil {
-				return Node{}, err
-			}
-			node = Node{t, []Node{node, other}}
-		case '+', '-', '*', '/', ';':
+		case '+', '-', '*', '/':
 			ts.Advance()
 			other, err := parseExpr(ts, precedence(t))
 			if err != nil {
