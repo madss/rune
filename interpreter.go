@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 )
 
 type Interpreter struct {
@@ -74,7 +75,7 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 		default:
 			return nil, fmt.Errorf("expected numberic value")
 		}
-	case node.Type.IsOneOf('=', '<', '>', '+', '-', '*', '/', '%') && len(node.Args) == 2:
+	case node.Type.IsOneOf('=', '<', '>', '+', '-', '*', '/', '%', '.') && len(node.Args) == 2:
 		left, err := i.interpret(node.Args[0])
 		if err != nil {
 			return nil, err
@@ -119,8 +120,34 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 					return nil, fmt.Errorf("dividing by zero")
 				}
 				return lval % rval, nil
+			case '.':
+				if rval == 0 {
+					return float64(lval), nil
+				}
+				return float64(lval) + float64(rval)/math.Pow(10, math.Floor(math.Log10(float64(rval)))+1), nil
 			default:
-				panic("invalid operator")
+				panic("invalid integer operator")
+			}
+		case isFloatPair(left, right):
+			lval := left.(float64)
+			rval := right.(float64)
+			switch node.Type {
+			case '=':
+				return lval == rval, nil
+			case '<':
+				return lval < rval, nil
+			case '>':
+				return lval > rval, nil
+			case '+':
+				return lval + rval, nil
+			case '-':
+				return lval - rval, nil
+			case '*':
+				return lval * rval, nil
+			case '/':
+				return lval / rval, nil
+			default:
+				panic("invalid floating point operator")
 			}
 		default:
 			return nil, fmt.Errorf("unexpected values")
@@ -152,5 +179,11 @@ func isBoolPair(left, right interface{}) bool {
 func isIntPair(left, right interface{}) bool {
 	_, okleft := left.(int)
 	_, okright := right.(int)
+	return okleft && okright
+}
+
+func isFloatPair(left, right interface{}) bool {
+	_, okleft := left.(float64)
+	_, okright := right.(float64)
 	return okleft && okright
 }

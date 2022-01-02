@@ -11,6 +11,8 @@ type Node struct {
 
 func precedence(t token) int {
 	switch t {
+	case '.':
+		return 6
 	case '*', '/', '%':
 		return 5
 	case '+', '-':
@@ -98,7 +100,7 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 			return node, nil
 		}
 		switch {
-		case t.IsOneOf('+', '-', '*', '/', '%', '=', '<', '>', '&', '|'):
+		case t.IsOneOf('+', '-', '*', '/', '%', '=', '<', '>', '&', '|', '.'):
 			ts.Advance()
 			other, err := parseExpr(ts, precedence(t))
 			if err != nil {
