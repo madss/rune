@@ -31,7 +31,7 @@ func TestInterpreter(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err.Error())
 			}
-			if reflect.DeepEqual(tc.want, got) {
+			if !reflect.DeepEqual(tc.want, got) {
 				t.Fatalf("%s = %d. Want %d", tc.expr, got, tc.want)
 			}
 		})
