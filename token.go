@@ -5,7 +5,7 @@ import "unicode"
 type tokens []rune
 
 func tokenize(s string) tokens {
-	return append([]rune(s), 0)
+	return append(tokens(s), 0)
 }
 
 func (ts *tokens) Current() token {
@@ -24,6 +24,15 @@ func (t token) IsDigit() bool {
 
 func (t token) IsIdent() bool {
 	return unicode.IsLetter(rune(t))
+}
+
+func (t token) IsOneOf(ts ...token) bool {
+	for _, c := range ts {
+		if c == t {
+			return true
+		}
+	}
+	return false
 }
 
 func (t token) String() string {

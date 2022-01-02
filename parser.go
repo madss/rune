@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Node struct {
@@ -10,23 +9,17 @@ type Node struct {
 	Args []Node
 }
 
-func (n *Node) String() string {
-	b := strings.Builder{}
-	b.WriteRune('(')
-	b.WriteRune(rune(n.Type))
-	for _, arg := range n.Args {
-		b.WriteRune(' ')
-		b.WriteString(arg.String())
-	}
-	b.WriteRune(')')
-	return b.String()
-}
-
 func precedence(t token) int {
 	switch t {
-	case '*', '/':
-		return 2
+	case '*', '/', '%':
+		return 5
 	case '+', '-':
+		return 4
+	case '=', '<', '>':
+		return 3
+	case '&':
+		return 2
+	case '|':
 		return 1
 	default:
 		return 0
@@ -58,7 +51,7 @@ func parseDecl(ts *tokens) (Node, error) {
 			return Node{}, fmt.Errorf("expected =, got %s", t)
 		}
 		ts.Advance()
-		n, err := parseExpr(ts, 0) // FIXME: Is this a good precedence?!
+		n, err := parseExpr(ts, 0)
 		if err != nil {
 			return Node{}, fmt.Errorf("expected expression, got %s", ts.Current())
 		}
@@ -69,16 +62,14 @@ func parseDecl(ts *tokens) (Node, error) {
 }
 
 func parseExpr(ts *tokens, prec int) (Node, error) {
-	logf(prec, "parseExpr(%d)", prec)
 	var node Node
 
 	t := ts.Current()
-	logf(prec, "Found prefix %c", t)
 	switch {
 	case t.IsDigit() || t.IsIdent():
 		ts.Advance()
 		node = Node{t, nil}
-	case t == '-':
+	case t.IsOneOf('-', '!'):
 		ts.Advance()
 		other, err := parseExpr(ts, 0)
 		if err != nil {
@@ -92,7 +83,6 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 			return Node{}, err
 		}
 		if t := ts.Current(); t != ')' {
-			logf(prec, "Found ending %c", t)
 			return Node{}, fmt.Errorf("expected ), got %s", t)
 		}
 		ts.Advance()
@@ -103,15 +93,12 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 
 	for {
 		t := ts.Current()
-		logf(prec, "Found suffix %c (%d)", t, precedence(t))
 
 		if precedence(t) < prec {
-			logf(prec, "too low precedence")
 			return node, nil
-
 		}
-		switch t {
-		case '+', '-', '*', '/':
+		switch {
+		case t.IsOneOf('+', '-', '*', '/', '%', '=', '<', '>', '&', '|'):
 			ts.Advance()
 			other, err := parseExpr(ts, precedence(t))
 			if err != nil {
@@ -122,8 +109,4 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 			return node, nil
 		}
 	}
-}
-
-func logf(indent int, format string, args ...interface{}) {
-	// fmt.Printf(strings.Repeat(" ", indent)+format+"\n", args...)
 }
