@@ -41,6 +41,18 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 			return nil, fmt.Errorf("undefined variable %c", node.Type)
 		}
 		return val, nil
+	case node.Type == ';':
+		var (
+			val interface{}
+			err error
+		)
+		for _, n := range node.Args {
+			val, err = i.interpret(n)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return val, nil
 	case node.Type == '$' && len(node.Args) == 2:
 		ident := rune(node.Args[0].Type)
 		val, err := i.interpret(node.Args[1])
@@ -71,6 +83,8 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 		}
 		switch val := val.(type) {
 		case int:
+			return -val, nil
+		case float64:
 			return -val, nil
 		default:
 			return nil, fmt.Errorf("expected numberic value")
@@ -121,12 +135,21 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 				}
 				return lval % rval, nil
 			case '.':
-				if rval == 0 {
+				switch {
+				case rval < 0:
+					return nil, fmt.Errorf("negative decimal part")
+				case rval == 0:
 					return float64(lval), nil
+				default:
+					decimals := float64(rval) / math.Pow(10, math.Floor(math.Log10(float64(rval)))+1)
+					if lval >= 0 {
+						return float64(lval) + decimals, nil
+					} else {
+						return float64(lval) - decimals, nil
+					}
 				}
-				return float64(lval) + float64(rval)/math.Pow(10, math.Floor(math.Log10(float64(rval)))+1), nil
 			default:
-				panic("invalid integer operator")
+				return nil, fmt.Errorf("invalid integer operator")
 			}
 		case isFloatPair(left, right):
 			lval := left.(float64)
@@ -147,7 +170,7 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 			case '/':
 				return lval / rval, nil
 			default:
-				panic("invalid floating point operator")
+				return nil, fmt.Errorf("invalid floating point operator")
 			}
 		default:
 			return nil, fmt.Errorf("unexpected values")

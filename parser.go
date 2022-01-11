@@ -12,12 +12,16 @@ type Node struct {
 func precedence(t token) int {
 	switch t {
 	case '.':
-		return 6
+		return 8
+	case '!': // Also unary minus that cannot be represented because of binary minus
+		return 7
 	case '*', '/', '%':
-		return 5
+		return 6
 	case '+', '-':
+		return 5
+	case '<', '>':
 		return 4
-	case '=', '<', '>':
+	case '=':
 		return 3
 	case '&':
 		return 2
@@ -29,7 +33,7 @@ func precedence(t token) int {
 }
 
 func parse(ts *tokens) (Node, error) {
-	node, err := parseDecl(ts)
+	node, err := parseDecls(ts)
 	if err != nil {
 		return Node{}, err
 	}
@@ -39,14 +43,30 @@ func parse(ts *tokens) (Node, error) {
 	return node, nil
 }
 
+func parseDecls(ts *tokens) (Node, error) {
+	decls := Node{Type: ';'}
+	for {
+		decl, err := parseDecl(ts)
+		if err != nil {
+			return Node{}, err
+		}
+		decls.Args = append(decls.Args, decl)
+
+		if ts.Current() != ';' {
+			return decls, nil
+		}
+		ts.Advance()
+	}
+}
+
 func parseDecl(ts *tokens) (Node, error) {
 	t := ts.Current()
 	switch t {
 	case '$':
 		ts.Advance()
-		ident := ts.Current()
-		if !ident.IsIdent() {
-			return Node{}, fmt.Errorf("expected identifier, got %s", t)
+		name := ts.Current()
+		if !name.IsIdent() {
+			return Node{}, fmt.Errorf("expected identifier, got %s", name)
 		}
 		ts.Advance()
 		if ts.Current() != '=' {
@@ -57,7 +77,7 @@ func parseDecl(ts *tokens) (Node, error) {
 		if err != nil {
 			return Node{}, fmt.Errorf("expected expression, got %s", ts.Current())
 		}
-		return Node{t, []Node{{Type: ident}, n}}, nil
+		return Node{t, []Node{{Type: name}, n}}, nil
 	default:
 		return parseExpr(ts, 0)
 	}
@@ -73,7 +93,7 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 		node = Node{t, nil}
 	case t.IsOneOf('-', '!'):
 		ts.Advance()
-		other, err := parseExpr(ts, 0)
+		other, err := parseExpr(ts, precedence('!'))
 		if err != nil {
 			return Node{}, err
 		}
@@ -96,7 +116,7 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 	for {
 		t := ts.Current()
 
-		if precedence(t) < prec {
+		if precedence(t) <= prec {
 			return node, nil
 		}
 		switch {

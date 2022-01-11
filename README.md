@@ -36,7 +36,7 @@ Floating point numbers can not be expressed directly, but can be obtained by app
     3.(2*9*9*9-6*6-7)
     --> 3.1415
 
-Boolean values can be obtained by applying comparison operators, but there is no way to define them explicitely. There are no multi-character operators, but `a not equal b` can be written as `!(a=b)` and `a less than or equal b` can be written as `!(a>b)`.
+Boolean values can be obtained by applying comparison operators. There are no multi-character operators, but `a not equal b` can be written as `!(a=b)` and `a less than or equal b` can be written as `!(a>b)`. There is no way of directrly reference `true` or `false`.
 
     !(1=1)
     --> false
