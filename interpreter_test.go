@@ -200,6 +200,17 @@ func TestInterpreter(t *testing.T) {
 				{"$a=", nil, "expected expression, got end of data"},
 			},
 		},
+		{
+			"Ternary if",
+			[]TestCase{
+				{"1=1?2:3", 2, ""},
+				{"1=2?2:3", 3, ""},
+				{"1=2?2:1=1?3:4", 3, ""},
+				{"?", nil, "expected expression, got ?"},
+				{"1=1?", nil, "expected expression, got end of data"},
+				{"1=1?2:", nil, "expected expression, got end of data"},
+			},
+		},
 	} {
 		for i, tc := range tg.Cases {
 			t.Run(fmt.Sprintf("%s [%d]", tg.Name, i), func(t *testing.T) {

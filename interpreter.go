@@ -175,6 +175,16 @@ func (i *Interpreter) interpret(node Node) (interface{}, error) {
 		default:
 			return nil, fmt.Errorf("unexpected values")
 		}
+	case node.Type == '?' && len(node.Args) == 3:
+		cond, err := i.interpretBool(node.Args[0])
+		if err != nil {
+			return nil, err
+		}
+		if cond {
+			return i.interpret(node.Args[1])
+		} else {
+			return i.interpret(node.Args[2])
+		}
 	default:
 		panic("invalid node")
 	}

@@ -12,20 +12,22 @@ type Node struct {
 func precedence(t token) int {
 	switch t {
 	case '.':
-		return 8
+		return 9
 	case '!': // Also unary minus that cannot be represented because of binary minus
-		return 7
+		return 8
 	case '*', '/', '%':
-		return 6
+		return 7
 	case '+', '-':
-		return 5
+		return 6
 	case '<', '>':
-		return 4
+		return 5
 	case '=':
-		return 3
+		return 4
 	case '&':
-		return 2
+		return 3
 	case '|':
+		return 2
+	case '?':
 		return 1
 	default:
 		return 0
@@ -127,6 +129,21 @@ func parseExpr(ts *tokens, prec int) (Node, error) {
 				return Node{}, err
 			}
 			node = Node{t, []Node{node, other}}
+		case t == '?':
+			ts.Advance()
+			cons, err := parseExpr(ts, precedence(t))
+			if err != nil {
+				return Node{}, err
+			}
+			if ts.Current() != ':' {
+				return Node{}, fmt.Errorf("expected :, got %s", ts.Current())
+			}
+			ts.Advance()
+			alt, err := parseExpr(ts, precedence(t)-1)
+			if err != nil {
+				return Node{}, err
+			}
+			return Node{t, []Node{node, cons, alt}}, nil
 		default:
 			return node, nil
 		}
